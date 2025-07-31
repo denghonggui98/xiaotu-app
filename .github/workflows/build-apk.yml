@@ -30,11 +30,11 @@ jobs:
         pip install cython==0.29.30
         pip install buildozer
 
-    - name: Initialize Buildozer environment
+    - name: Prepare Android environment
       run: |
-        # 初始化Buildozer环境，这会触发Android SDK/NDK的下载
-        echo "初始化Buildozer环境..."
-        buildozer android debug || echo "初始化完成（可能有警告，但这是正常的）"
+        # 让Buildozer自主处理Android SDK/NDK的下载和配置
+        echo "初始化Android环境..."
+        buildozer android debug || echo "初始化完成"
 
     - name: Set up Android licenses
       run: |
@@ -46,20 +46,11 @@ jobs:
         echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
 
     - name: Build APK with maximum verbosity
-      id: build_apk
       run: |
         echo "开始构建APK..."
-        echo "当前目录内容:"
-        ls -la
-        echo ""
-        
-        echo "Buildozer版本信息:"
-        buildozer --version
-        echo ""
-        
-        echo "执行详细构建..."
         buildozer -v android debug
-      continue-on-error: true
+      env:
+        ANDROID_SDK_ROOT: $HOME/.buildozer/android/platform/android-sdk
 
     - name: Debug information
       if: always()
@@ -89,16 +80,6 @@ jobs:
         
         echo "查找所有APK文件:"
         find . -name "*.apk" 2>/dev/null || echo "未找到APK文件"
-        echo ""
-        
-        echo "检查日志文件:"
-        find . -name "*.log" 2>/dev/null | xargs ls -la 2>/dev/null || echo "未找到日志文件"
-
-    - name: Retry build if needed
-      if: steps.build_apk.outcome == 'failure'
-      run: |
-        echo "第一次构建失败，尝试第二次构建..."
-        buildozer -v android debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
@@ -111,7 +92,7 @@ jobs:
           */*.apk
 
     - name: Create Release
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && always()
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: ncipollo/release-action@v1
       with:
         tag: v${{ github.run_number }}
@@ -120,3 +101,4 @@ jobs:
           bin/*.apk
           *.apk
           */*.apk
+        token: ${{ secrets.GITHUB_TOKEN }}
