@@ -28,11 +28,11 @@ jobs:
         sudo apt update
         sudo apt install -y build-essential git python3 python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
 
-
     - name: Set up Android SDK environment
       run: |
         # 创建Android SDK目录结构
         mkdir -p /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin
+        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools/bin
         mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
         
         # 添加Android SDK许可证（自动接受）
@@ -43,32 +43,30 @@ jobs:
         echo "已创建的许可证文件:"
         ls -la /home/runner/.buildozer/android/platform/android-sdk/licenses/
 
-    - name: Fix SDK Manager Path
+    - name: Download and setup Android command line tools
       run: |
-        # 创建符号链接以解决SDK路径问题
+        cd /tmp
+        # 下载Android命令行工具
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+        unzip commandlinetools-linux-9477386_latest.zip
+        
+        # 将工具复制到正确位置
         SDK_ROOT="/home/runner/.buildozer/android/platform/android-sdk"
+        cp -r cmdline-tools $SDK_ROOT/
         
-        # 如果tools目录不存在，创建它并建立符号链接
-        if [ ! -d "$SDK_ROOT/tools" ]; then
-          echo "创建tools目录和符号链接"
-          mkdir -p "$SDK_ROOT/tools"
-        fi
+        # 重命名tools目录为latest
+        mv $SDK_ROOT/cmdline-tools/tools $SDK_ROOT/cmdline-tools/latest
         
-        # 检查cmdline-tools中是否有sdkmanager
-        if [ -f "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
-          echo "创建sdkmanager符号链接"
-          ln -sf "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "$SDK_ROOT/tools/bin/sdkmanager" 2>/dev/null || echo "无法创建符号链接"
-        fi
+        # 验证sdkmanager存在
+        echo "检查sdkmanager是否存在:"
+        ls -la $SDK_ROOT/cmdline-tools/latest/bin/
         
-        # 检查目录结构
-        echo "Android SDK目录结构:"
-        ls -la "$SDK_ROOT/"
-        echo ""
+        # 创建符号链接确保向后兼容
+        ln -sf $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager $SDK_ROOT/tools/bin/sdkmanager
+        ln -sf $SDK_ROOT/cmdline-tools/latest/bin/avdmanager $SDK_ROOT/tools/bin/avdmanager
         
-        if [ -d "$SDK_ROOT/cmdline-tools/latest/bin" ]; then
-          echo "cmdline-tools目录内容:"
-          ls -la "$SDK_ROOT/cmdline-tools/latest/bin/"
-        fi
+        echo "符号链接创建完成:"
+        ls -la $SDK_ROOT/tools/bin/
 
     - name: Build APK
       run: |
@@ -84,7 +82,7 @@ jobs:
       with:
         name: xiaotu-app-apk
         path: bin/*.apk
-    
+
     - name: Create Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: ncipollo/release-action@v1
