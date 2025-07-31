@@ -19,7 +19,7 @@ jobs:
       with:
         python-version: '3.8'
 
-    - name: Install Python dependencies
+    - name: Install dependencies
       run: |
         pip install --upgrade pip
         pip install buildozer cython
@@ -29,17 +29,17 @@ jobs:
         sudo apt update
         sudo apt install -y build-essential git python3 python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
 
-    - name: Build APK (let buildozer handle everything)
+    - name: Build APK
       run: |
-        # 清除所有ANDROID环境变量以确保buildozer能完全自主管理Android环境
-        unset ANDROID_HOME ANDROID_SDK_ROOT ANDROID_NDK_ROOT || true
-        # 让buildozer完全自主处理Android SDK/NDK的下载和配置
+        # 让buildozer完全自主处理Android环境配置
         buildozer android debug
-```
 
-```yaml
-<<<<<<< SEARCH
-# 移除了重复的Upload APK步骤，只保留一个简洁的版本（见下文）
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: xiaotu-app-apk
+        path: bin/*.apk
 
     - name: Create Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
