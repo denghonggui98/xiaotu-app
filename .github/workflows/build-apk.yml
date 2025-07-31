@@ -13,18 +13,41 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Check files
+    - name: Debug - Check current directory and file structure
       run: |
-        echo "当前目录: $(pwd)"
-        echo "目录内容:"
+        echo "=== 当前工作目录 ==="
+        pwd
+        echo ""
+        
+        echo "=== 当前目录内容 ==="
         ls -la
-        echo "检查buildozer.spec是否存在:"
+        echo ""
+        
+        echo "=== 检查buildozer.spec文件 ==="
         if [ -f "buildozer.spec" ]; then
-          echo "buildozer.spec 文件存在"
-          echo "文件内容前10行:"
-          head -10 buildozer.spec
+          echo "SUCCESS: buildozer.spec 文件存在"
+          echo "文件大小: $(stat -c%s buildozer.spec) 字节"
+          echo "文件权限: $(stat -c%A buildozer.spec)"
+          echo "文件前15行内容:"
+          head -15 buildozer.spec
         else
-          echo "错误: buildozer.spec 文件不存在"
+          echo "ERROR: buildozer.spec 文件不存在"
+          
+          echo "=== 检查所有文件 ==="
+          find . -type f -name "*buildozer*" 2>/dev/null
+          
+          echo "=== 检查所有.spec文件 ==="
+          find . -type f -name "*.spec" 2>/dev/null
+        fi
+        echo ""
+        
+        echo "=== 检查.git目录 ==="
+        if [ -d ".git" ]; then
+          echo ".git 目录存在"
+          echo "Git状态:"
+          git status --porcelain
+        else
+          echo "ERROR: .git 目录不存在"
         fi
 
     - name: Set up Python
@@ -42,21 +65,49 @@ jobs:
         sudo apt update
         sudo apt install -y build-essential git python3 python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
 
-    - name: Setup Android SDK
-      run: |
-        echo "Setting up Android environment"
-        # buildozer will automatically download and setup Android SDK/NDK
 
-    - name: Build APK
       run: |
-        echo "构建前检查目录结构:"
+        echo "=== 构建前最终检查 ==="
+        echo "当前目录: $(pwd)"
+        echo "目录内容:"
         ls -la
-        buildozer android debug
-      env:
-        ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        echo ""
+        
+        echo "=== 检查环境变量 ==="
+        echo "ANDROID_HOME: $ANDROID_HOME"
+        echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
+        echo ""
+        
+        echo "=== 检查buildozer是否安装 ==="
+        which buildozer || echo "buildozer 未找到"
+        buildozer --version || echo "无法获取buildozer版本"
+        echo ""
+        
+        echo "=== 检查Android SDK和build-tools ==="
+        echo "Android SDK路径:"
+        ls -la $ANDROID_SDK_ROOT/ || echo "SDK目录不存在"
+        echo ""
+        
+        echo "Build-tools路径:"
+        ls -la $ANDROID_SDK_ROOT/build-tools/ || echo "Build-tools目录不存在"
+        echo ""
+        
+        echo "=== 检查Aidl是否存在 ==="
+        find $ANDROID_SDK_ROOT -name "aidl" 2>/dev/null || echo "未找到aidl工具"
+        echo ""
+        
+        echo "=== 尝试使用buildozer ==="
+        if [ -f "buildozer.spec" ]; then
+          echo "开始构建APK..."
+          buildozer android debug
+        else
+          echo "错误: buildozer.spec 文件不存在，无法继续构建"
+          exit 1
+        fi
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: xiaotu-app-apk
         path: bin/*.apk
