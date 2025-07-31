@@ -29,10 +29,29 @@ jobs:
         sudo apt update
         sudo apt install -y build-essential git python3 python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
 
+    - name: Prepare build environment
+      run: |
+        # 创建基本目录结构
+        mkdir -p $HOME/.buildozer/android/platform/
+        
+        # 初始化buildozer，这会触发Android SDK/NDK的下载
+        buildozer android debug || true
+
+    - name: Accept Android licenses
+      run: |
+        # 确保Android SDK目录存在
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk/licenses/
+        
+        # 自动接受Android SDK许可证
+        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+
     - name: Build APK
       run: |
-        # 让buildozer完全自主处理Android环境配置
+        # 最终构建APK
         buildozer android debug
+      env:
+        ANDROID_SDK_ROOT: $HOME/.buildozer/android/platform/android-sdk
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
