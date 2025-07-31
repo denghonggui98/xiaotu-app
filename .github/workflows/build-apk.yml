@@ -30,27 +30,12 @@ jobs:
         pip install cython==0.29.30
         pip install buildozer
 
-    - name: Prepare Android environment
+    - name: Build APK (let Buildozer handle everything)
       run: |
-        # 让Buildozer自主处理Android SDK/NDK的下载和配置
-        echo "初始化Android环境..."
-        buildozer android debug || echo "初始化完成"
-
-    - name: Set up Android licenses
-      run: |
-        # 创建Android许可证目录
-        mkdir -p $HOME/.buildozer/android/platform/android-sdk/licenses/
-        
-        # 添加Android SDK许可证
-        echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-        echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
-
-    - name: Build APK with maximum verbosity
-      run: |
-        echo "开始构建APK..."
-        buildozer -v android debug
-      env:
-        ANDROID_SDK_ROOT: $HOME/.buildozer/android/platform/android-sdk
+        # 完全让Buildozer自主处理Android环境配置
+        # 不设置任何Android环境变量，不预先创建目录
+        echo "开始构建，让Buildozer自主处理所有Android环境配置..."
+        buildozer android debug
 
     - name: Debug information
       if: always()
@@ -64,6 +49,18 @@ jobs:
         if [ -d ".buildozer" ]; then
           echo ".buildozer目录内容:"
           ls -la .buildozer/
+          echo ""
+          
+          if [ -d ".buildozer/android" ]; then
+            echo ".buildozer/android目录内容:"
+            ls -la .buildozer/android/
+            echo ""
+            
+            if [ -d ".buildozer/android/platform" ]; then
+              echo ".buildozer/android/platform目录内容:"
+              ls -la .buildozer/android/platform/
+            fi
+          fi
         else
           echo ".buildozer目录不存在"
         fi
