@@ -28,45 +28,20 @@ jobs:
         sudo apt update
         sudo apt install -y build-essential git python3 python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
 
-    - name: Set up Android SDK environment
-      run: |
-        # 创建Android SDK目录结构
-        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin
-        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools/bin
-        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
-        
-        # 添加Android SDK许可证（自动接受）
-        echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-        echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
-        
-        # 验证许可证文件已创建
-        echo "已创建的许可证文件:"
-        ls -la /home/runner/.buildozer/android/platform/android-sdk/licenses/
+    - name: Set up Android environment
+      uses: nttld/setup-ndk@v1
+      with:
+        ndk-version: r25b
+        add-to-path: true
 
-    - name: Download and setup Android command line tools
+    - name: Accept Android SDK licenses
       run: |
-        cd /tmp
-        # 下载Android命令行工具
-        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-        unzip commandlinetools-linux-9477386_latest.zip
-        
-        # 将工具复制到正确位置
-        SDK_ROOT="/home/runner/.buildozer/android/platform/android-sdk"
-        cp -r cmdline-tools $SDK_ROOT/
-        
-        # 重命名tools目录为latest
-        mv $SDK_ROOT/cmdline-tools/tools $SDK_ROOT/cmdline-tools/latest
-        
-        # 验证sdkmanager存在
-        echo "检查sdkmanager是否存在:"
-        ls -la $SDK_ROOT/cmdline-tools/latest/bin/
-        
-        # 创建符号链接确保向后兼容
-        ln -sf $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager $SDK_ROOT/tools/bin/sdkmanager
-        ln -sf $SDK_ROOT/cmdline-tools/latest/bin/avdmanager $SDK_ROOT/tools/bin/avdmanager
-        
-        echo "符号链接创建完成:"
-        ls -la $SDK_ROOT/tools/bin/
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk/licenses
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        echo "84831b9409646a918e30573bab4c9c91346d8abd" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+    - name: Initialize Buildozer
+      run: |
+        buildozer android debug || true
 
     - name: Build APK
       run: |
