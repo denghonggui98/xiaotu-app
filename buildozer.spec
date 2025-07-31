@@ -32,7 +32,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.1.0,Pillow==9.2.0,android
+requirements = python3,kivy==2.1.0,Pillow==9.2.0
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with source files not in 'site-packages'
@@ -61,23 +61,11 @@ log_level = 2
 # (int) Display warning if buildozer is run as root (0 = False, 1 = True)
 warn_on_root = 1
 
-# (str) Path to build output (i.e. .apk, .ipa) storage
-bin_dir = ./bin
-
-
-[buildozer]
-
-# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
-log_level = 2
-
-# (int) Display warning if buildozer is run as root (0 = False, 1 = True)
-warn_on_root = 1
-
 # (str) Path to build artifact storage, absolute or relative to spec file
 # build_dir = ./.buildozer
 
 # (str) Path to build output (i.e. .apk, .ipa) storage
-# bin_dir = ./bin
+bin_dir = ./bin
 
 #    -----------------------------------------------------------------------------
 #    List as sections
