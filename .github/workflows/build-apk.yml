@@ -11,119 +11,110 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Debug - Check current directory and file structure
-        run: |
-          echo "=== 当前工作目录 ==="
-          pwd
-          echo ""
+    - name: Debug - Check current directory and file structure
+      run: |
+        echo "=== 当前工作目录 ==="
+        pwd
+        echo ""
+        
+        echo "=== 当前目录内容 ==="
+        ls -la
+        echo ""
+        
+        echo "=== 检查buildozer.spec文件 ==="
+        if [ -f "buildozer.spec" ]; then
+          echo "SUCCESS: buildozer.spec 文件存在"
+          echo "文件大小: $(stat -c%s buildozer.spec) 字节"
+          echo "文件权限: $(stat -c%A buildozer.spec)"
+          echo "文件前15行内容:"
+          head -15 buildozer.spec
+        else
+          echo "ERROR: buildozer.spec 文件不存在"
           
-          echo "=== 当前目录内容 ==="
-          ls -la
-          echo ""
+          echo "=== 检查所有文件 ==="
+          find . -type f -name "*buildozer*" 2>/dev/null
           
-          echo "=== 检查buildozer.spec文件 ==="
-          if [ -f "buildozer.spec" ]; then
-            echo "SUCCESS: buildozer.spec 文件存在"
-            echo "文件大小: $(stat -c%s buildozer.spec) 字节"
-            echo "文件权限: $(stat -c%A buildozer.spec)"
-            echo "文件前15行内容:"
-            head -15 buildozer.spec
-          else
-            echo "ERROR: buildozer.spec 文件不存在"
-            
-            echo "=== 检查所有文件 ==="
-            find . -type f -name "*buildozer*" 2>/dev/null
-            
-            echo "=== 检查所有.spec文件 ==="
-            find . -type f -name "*.spec" 2>/dev/null
-          fi
-          echo ""
-          
-          echo "=== 检查.git目录 ==="
-          if [ -d ".git" ]; then
-            echo ".git 目录存在"
-            echo "Git状态:"
-            git status --porcelain
-          else
-            echo "ERROR: .git 目录不存在"
-          fi
+          echo "=== 检查所有.spec文件 ==="
+          find . -type f -name "*.spec" 2>/dev/null
+        fi
+        echo ""
+        
+        echo "=== 检查.git目录 ==="
+        if [ -d ".git" ]; then
+          echo ".git 目录存在"
+          echo "Git状态:"
+          git status --porcelain
+        else
+          echo "ERROR: .git 目录不存在"
+        fi
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.8'
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.8'
 
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install buildozer cython
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install buildozer cython
 
-      - name: Install system dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y build-essential git python3 python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
+    - name: Install system dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential git python3 python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
 
-      - name: Install Android SDK
-        run: |
-          echo "安装Android SDK和工具"
-          sudo apt install -y android-sdk
-          echo "ANDROID_HOME=/usr/lib/android-sdk" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=/usr/lib/android-sdk" >> $GITHUB_ENV
-          echo "PATH=$PATH:/usr/lib/android-sdk/tools:/usr/lib/android-sdk/platform-tools" >> $GITHUB_ENV
+    - name: Prepare Android SDK for Buildozer
+      run: |
+        # 创建Buildozer需要的目录结构
+        mkdir -p ~/.buildozer/android/platform/
+        
+        # 让Buildozer自动下载和安装Android SDK和NDK
+        echo "Buildozer will automatically download and setup Android SDK/NDK"
+        echo "This may take some time..."
 
-      - name: Build APK with additional debugging
-        run: |
-          echo "=== 构建前最终检查 ==="
-          echo "当前目录: $(pwd)"
-          echo "目录内容:"
-          ls -la
-          echo ""
-          
-          echo "=== 检查环境变量 ==="
-          echo "ANDROID_HOME: $ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
-          echo ""
-          
-          echo "=== 检查buildozer是否安装 ==="
-          which buildozer || echo "buildozer 未找到"
-          buildozer --version || echo "无法获取buildozer版本"
-          echo ""
-          
-          echo "=== 检查Android SDK和build-tools ==="
-          echo "Android SDK路径:"
-          ls -la $ANDROID_SDK_ROOT/ || echo "SDK目录不存在"
-          echo ""
-          
-          echo "Build-tools路径:"
-          ls -la $ANDROID_SDK_ROOT/build-tools/ || echo "Build-tools目录不存在"
-          echo ""
-          
-          echo "=== 检查Aidl是否存在 ==="
-          find $ANDROID_SDK_ROOT -name "aidl" 2>/dev/null || echo "未找到aidl工具"
-          echo ""
-          
-          echo "=== 尝试使用buildozer ==="
-          if [ -f "buildozer.spec" ]; then
-            echo "开始构建APK..."
-            buildozer android debug
-          else
-            echo "错误: buildozer.spec 文件不存在，无法继续构建"
-            exit 1
-          fi
+    - name: Build APK with additional debugging
+      run: |
+        echo "=== 构建前最终检查 ==="
+        echo "当前目录: $(pwd)"
+        echo "目录内容:"
+        ls -la
+        echo ""
+        
+        echo "=== 检查buildozer是否安装 ==="
+        which buildozer || echo "buildozer 未找到"
+        buildozer --version || echo "无法获取buildozer版本"
+        echo ""
+        
+        echo "=== 检查Android SDK目录 ==="
+        echo "Buildozer Android目录:"
+        ls -la ~/.buildozer/android/ 2>/dev/null || echo "目录不存在"
+        echo ""
+        
+        echo "=== 尝试使用buildozer ==="
+        if [ -f "buildozer.spec" ]; then
+          echo "开始构建APK..."
+          # 使用-v选项获取详细输出，便于调试
+          buildozer -v android debug
+        else
+          echo "错误: buildozer.spec 文件不存在，无法继续构建"
+          exit 1
+        fi
+      env:
+        ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: xiaotu-app-apk
-          path: bin/*.apk
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: xiaotu-app-apk
+        path: bin/*.apk
 
-      - name: Create Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: ncipollo/release-action@v1
-        with:
-          tag: v${{ github.run_number }}
-          name: Release v${{ github.run_number }}
-          artifacts: bin/*.apk
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: ncipollo/release-action@v1
+      with:
+        tag: v${{ github.run_number }}
+        name: Release v${{ github.run_number }}
+        artifacts: bin/*.apk
