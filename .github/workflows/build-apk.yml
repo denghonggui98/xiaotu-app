@@ -13,6 +13,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Check files
+      run: |
+        echo "当前目录: $(pwd)"
+        echo "目录内容:"
+        ls -la
+        echo "检查buildozer.spec是否存在:"
+        if [ -f "buildozer.spec" ]; then
+          echo "buildozer.spec 文件存在"
+          echo "文件内容前10行:"
+          head -10 buildozer.spec
+        else
+          echo "错误: buildozer.spec 文件不存在"
+        fi
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -35,6 +49,8 @@ jobs:
 
     - name: Build APK
       run: |
+        echo "构建前检查目录结构:"
+        ls -la
         buildozer android debug
       env:
         ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
