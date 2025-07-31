@@ -89,3 +89,6 @@ APK文件将生成在`bin/`目录中。
 - 修复GitHub Actions中已弃用的actions/upload-artifact@v3版本问题
 - 更新所有GitHub Actions到最新稳定版本
 - 使用更现代的release-action替代旧的create-release和upload-release-asset
+- 修复buildozer.spec中的重复section问题
+- 优化Android SDK安装过程，解决Aidl未找到问题
+- 修复GitHub Actions配置文件中的重复run字段问题

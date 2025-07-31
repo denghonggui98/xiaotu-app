@@ -13,7 +13,6 @@ from kivy.uix.image import Image
 from kivy.graphics.texture import Texture
 from kivy.core.image import Image as CoreImage
 from kivy.clock import Clock
-from kivy.core.text import LabelBase
 from PIL import Image as PILImage
 from PIL import ImageOps
 import os
