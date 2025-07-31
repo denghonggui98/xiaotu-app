@@ -35,7 +35,7 @@ jobs:
         mkdir -p $HOME/.buildozer/android/platform/
         
         # 初始化buildozer，这会触发Android SDK/NDK的下载
-        buildozer android debug || true
+        buildozer -v android debug || true
 
     - name: Accept Android licenses
       run: |
@@ -46,19 +46,42 @@ jobs:
         echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
         echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
 
-    - name: Build APK
+    - name: Build APK with verbose logging
       run: |
-        # 最终构建APK
-        buildozer android debug
+        # 最终构建APK，使用详细日志模式
+        buildozer -v android debug
       env:
         ANDROID_SDK_ROOT: $HOME/.buildozer/android/platform/android-sdk
+
+    - name: Debug - Check build results
+      if: always()
+      run: |
+        echo "=== 检查构建结果 ==="
+        echo "当前目录内容:"
+        ls -la
+        echo ""
+        
+        echo "检查bin目录:"
+        if [ -d "bin" ]; then
+          echo "bin目录内容:"
+          ls -la bin/
+        else
+          echo "bin目录不存在"
+        fi
+        echo ""
+        
+        echo "查找所有APK文件:"
+        find . -name "*.apk" 2>/dev/null || echo "未找到APK文件"
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: xiaotu-app-apk
-        path: bin/*.apk
+        path: |
+          bin/*.apk
+          *.apk
+          */*.apk
 
     - name: Create Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -66,4 +89,7 @@ jobs:
       with:
         tag: v${{ github.run_number }}
         name: Release v${{ github.run_number }}
-        artifacts: bin/*.apk
+        artifacts: |
+          bin/*.apk
+          *.apk
+          */*.apk
