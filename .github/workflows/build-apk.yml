@@ -28,19 +28,34 @@ jobs:
         sudo apt update
         sudo apt install -y build-essential git python3 python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
 
+    - name: Download Android Command Line Tools
+      run: |
+        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip -O cmdline-tools.zip
+        unzip cmdline-tools.zip
+        mv cmdline-tools /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest
+        echo "已下载并安装 Android Command Line Tools"
+        
     - name: Set up Android SDK and accept licenses
       run: |
+        # 设置环境变量
+        export ANDROID_HOME=/home/runner/.buildozer/android/platform/android-sdk
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+        
         # 创建必要的目录
-        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
+        mkdir -p $ANDROID_HOME/licenses
         
         # 添加Android SDK许可证（自动接受）
-        echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-        echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+        echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_HOME/licenses/android-sdk-license
+        echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
         
-        # 验证许可证文件已创建
-        echo "已创建的许可证文件:"
-        cat /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-        cat /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+        # 使用sdkmanager安装必要的组件
+        yes | sdkmanager --licenses
+        sdkmanager "platform-tools" "build-tools;33.0.0" "platforms;android-33"
+        
+        # 验证安装
+        echo "已安装的 Android SDK 组件:"
+        sdkmanager --list_installed
 
     - name: Initialize Buildozer and install Android components
       run: |
