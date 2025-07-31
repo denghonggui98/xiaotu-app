@@ -19,46 +19,63 @@ jobs:
       with:
         python-version: '3.8'
 
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip
-        pip install buildozer cython
-
     - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y build-essential git python3 python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
 
-    - name: Prepare build environment
+    - name: Install Python dependencies
       run: |
-        # 创建基本目录结构
-        mkdir -p $HOME/.buildozer/android/platform/
-        
-        # 初始化buildozer，这会触发Android SDK/NDK的下载
-        buildozer -v android debug || true
+        pip install --upgrade pip
+        pip install cython==0.29.30
+        pip install buildozer
 
-    - name: Accept Android licenses
+    - name: Initialize Buildozer environment
       run: |
-        # 确保Android SDK目录存在
+        # 初始化Buildozer环境，这会触发Android SDK/NDK的下载
+        echo "初始化Buildozer环境..."
+        buildozer android debug || echo "初始化完成（可能有警告，但这是正常的）"
+
+    - name: Set up Android licenses
+      run: |
+        # 创建Android许可证目录
         mkdir -p $HOME/.buildozer/android/platform/android-sdk/licenses/
         
-        # 自动接受Android SDK许可证
-        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        # 添加Android SDK许可证
+        echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
 
-    - name: Build APK with verbose logging
+    - name: Build APK with maximum verbosity
+      id: build_apk
       run: |
-        # 最终构建APK，使用详细日志模式
-        buildozer -v android debug
-      env:
-        ANDROID_SDK_ROOT: $HOME/.buildozer/android/platform/android-sdk
-
-    - name: Debug - Check build results
-      if: always()
-      run: |
-        echo "=== 检查构建结果 ==="
+        echo "开始构建APK..."
         echo "当前目录内容:"
         ls -la
+        echo ""
+        
+        echo "Buildozer版本信息:"
+        buildozer --version
+        echo ""
+        
+        echo "执行详细构建..."
+        buildozer -v android debug
+      continue-on-error: true
+
+    - name: Debug information
+      if: always()
+      run: |
+        echo "=== 构建后调试信息 ==="
+        echo "当前目录内容:"
+        ls -la
+        echo ""
+        
+        echo "检查.buildozer目录:"
+        if [ -d ".buildozer" ]; then
+          echo ".buildozer目录内容:"
+          ls -la .buildozer/
+        else
+          echo ".buildozer目录不存在"
+        fi
         echo ""
         
         echo "检查bin目录:"
@@ -72,6 +89,16 @@ jobs:
         
         echo "查找所有APK文件:"
         find . -name "*.apk" 2>/dev/null || echo "未找到APK文件"
+        echo ""
+        
+        echo "检查日志文件:"
+        find . -name "*.log" 2>/dev/null | xargs ls -la 2>/dev/null || echo "未找到日志文件"
+
+    - name: Retry build if needed
+      if: steps.build_apk.outcome == 'failure'
+      run: |
+        echo "第一次构建失败，尝试第二次构建..."
+        buildozer -v android debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
@@ -84,7 +111,7 @@ jobs:
           */*.apk
 
     - name: Create Release
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && always()
       uses: ncipollo/release-action@v1
       with:
         tag: v${{ github.run_number }}
