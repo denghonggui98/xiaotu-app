@@ -82,3 +82,10 @@ APK文件将生成在`bin/`目录中。
 - 由于Android权限系统，首次使用时需要授予应用存储权限
 - 处理大图片时可能需要一些时间，请耐心等待
 - 应用会自动使用设备系统中文字体，确保中文正确显示
+
+## 更新日志
+
+### v1.0
+- 修复GitHub Actions中已弃用的actions/upload-artifact@v3版本问题
+- 更新所有GitHub Actions到最新稳定版本
+- 使用更现代的release-action替代旧的create-release和upload-release-asset
