@@ -70,9 +70,17 @@ jobs:
         # 创建Buildozer需要的目录结构
         mkdir -p ~/.buildozer/android/platform/
         
-        # 让Buildozer自动下载和安装Android SDK和NDK
-        echo "Buildozer will automatically download and setup Android SDK/NDK"
-        echo "This may take some time..."
+        # 设置自动接受许可协议的环境变量
+        echo "设置Android SDK环境变量以自动接受许可"
+        export ANDROID_HOME=/home/runner/.buildozer/android/platform/android-sdk
+        mkdir -p $ANDROID_HOME/licenses/
+        
+        # 添加必要的许可文件
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_HOME/licenses/android-sdk-license
+        echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
+        
+        echo "许可文件已创建:"
+        ls -la $ANDROID_HOME/licenses/
 
     - name: Build APK with additional debugging
       run: |
@@ -92,6 +100,11 @@ jobs:
         ls -la ~/.buildozer/android/ 2>/dev/null || echo "目录不存在"
         echo ""
         
+        echo "=== 检查Android SDK许可 ==="
+        echo "Android SDK许可目录:"
+        ls -la ~/.buildozer/android/platform/android-sdk/licenses/ 2>/dev/null || echo "许可目录不存在"
+        echo ""
+        
         echo "=== 尝试使用buildozer ==="
         if [ -f "buildozer.spec" ]; then
           echo "开始构建APK..."
@@ -103,6 +116,7 @@ jobs:
         fi
       env:
         ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
+        ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
